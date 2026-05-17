@@ -1,13 +1,15 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { streamSSE } from 'hono/streaming'
+import { testRoutes } from './routes/test.js'
 
 const app = new Hono()
 
 app.use('/*', cors())
 
 app.get('/', (c) => c.json({ status: 'ok' }))
+
+app.route('/api/test', testRoutes)
 
 const port = 3001
 console.log(`backend running on http://localhost:${port}`)
