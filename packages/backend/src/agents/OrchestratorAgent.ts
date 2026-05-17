@@ -10,7 +10,7 @@ export async function runTestSuite(
 ): Promise<FinalReport> {
   emit(sessionId, { type: 'agent:start', agent: 'orchestrator', message: `Starting test suite for ${url}` })
 
-  const { overview, agents } = await analyzeSite(sessionId, url)
+  const { agents } = await analyzeSite(sessionId, url)
 
   emit(sessionId, {
     type: 'agent:log',
@@ -18,23 +18,18 @@ export async function runTestSuite(
     message: `Test plan ready: ${agents.length} agent(s) to dispatch`,
   })
 
-  const results: AgentResult[] = []
-
-  for (const assignment of agents) {
-    const { passed, failed, bugs } = await executeTestCases(
-      sessionId,
-      assignment.name,
-      assignment.scope,
-      assignment.testCases as TestCase[],
-    )
-    results.push({
-      agent: assignment.name,
-      passed,
-      failed,
-      bugs,
-      logs: [],
-    })
-  }
+  const results: AgentResult[] = await Promise.all(
+    agents.map(async (assignment) => {
+      const agentSessionId = `${sessionId}-${assignment.name}`
+      const { passed, failed, bugs } = await executeTestCases(
+        agentSessionId,
+        assignment.name,
+        assignment.scope,
+        assignment.testCases as TestCase[],
+      )
+      return { agent: assignment.name, passed, failed, bugs, logs: [] }
+    }),
+  )
 
   const report = await generateReport(sessionId, url, results)
 
