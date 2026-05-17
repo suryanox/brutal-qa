@@ -20,6 +20,7 @@ interface TestStore {
   showSettings: boolean
   sessions: SessionInfo[]
   viewSessionId: string | null
+  error: string | null
 
   setSessionId: (id: string | null) => void
   setLoading: (v: boolean) => void
@@ -31,6 +32,7 @@ interface TestStore {
   setShowSettings: (v: boolean) => void
   setSessions: (s: SessionInfo[]) => void
   setViewSessionId: (id: string | null) => void
+  setError: (msg: string | null) => void
   reset: () => void
 }
 
@@ -53,9 +55,10 @@ export const useTestStore = create<TestStore>()(
       settings: defaultSettings,
       showSettings: false,
       sessions: [],
+      error: null,
       viewSessionId: null,
 
-      setSessionId: (id) => set({ sessionId: id }),
+      setSessionId: (id) => set({ sessionId: id, error: null }),
       setLoading: (v) => set({ loading: v }),
       setConnected: (v) => set({ connected: v }),
       setUrl: (url) => set({ url }),
@@ -70,7 +73,8 @@ export const useTestStore = create<TestStore>()(
       updateSettings: (settings) => set({ settings, showSettings: false }),
       setShowSettings: (v) => set({ showSettings: v }),
       setSessions: (sessions) => set({ sessions }),
-      setViewSessionId: (id) => set({ viewSessionId: id }),
+      setViewSessionId: (id) => set({ viewSessionId: id, error: null }),
+      setError: (msg) => set({ error: msg }),
       reset: () =>
         set({
           sessionId: null,
@@ -78,6 +82,7 @@ export const useTestStore = create<TestStore>()(
           connected: false,
           events: [],
           report: null,
+          error: null,
         }),
     }),
     {

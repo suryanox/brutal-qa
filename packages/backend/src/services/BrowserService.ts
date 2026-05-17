@@ -2,6 +2,16 @@ import { execSync } from 'child_process'
 
 const BINARY = process.env.AGENT_BROWSER_PATH ?? 'agent-browser'
 
+export function checkBrowserBinary(): void {
+  try {
+    execSync(`${BINARY} --version`, { encoding: 'utf-8', timeout: 5000 })
+  } catch {
+    throw new Error(
+      `agent-browser not found. Install it:\n  npm install -g agent-browser\n  agent-browser install`,
+    )
+  }
+}
+
 export class BrowserService {
   private session: string
   constructor(session: string) {
@@ -10,7 +20,16 @@ export class BrowserService {
 
   private run(args: string): string {
     const cmd = `${BINARY} --session ${this.session} ${args}`
-    return execSync(cmd, { encoding: 'utf-8', timeout: 30_000 })
+    try {
+      return execSync(cmd, { encoding: 'utf-8', timeout: 30_000 })
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        throw new Error(
+          `agent-browser not found. Install: npm install -g agent-browser && agent-browser install`,
+        )
+      }
+      throw new Error(`agent-browser error: ${err.stderr?.slice(0, 200) || err.message}`)
+    }
   }
 
   open(url: string): void {

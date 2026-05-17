@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { v4 as uuid } from 'uuid'
 import { readFileSync } from 'node:fs'
+import { streamSSE } from 'hono/streaming'
 import { runTestSuite } from '../agents/OrchestratorAgent.js'
 import { registerSession, emit } from '../services/StreamService.js'
 import type { StreamEvent, SessionInfo, FinalReport } from '../types/index.js'
@@ -52,28 +53,19 @@ testRoutes.post('/', async (c) => {
   return c.json({ sessionId })
 })
 
-testRoutes.get('/stream/:sessionId', async (c) => {
+testRoutes.get('/stream/:sessionId', (c) => {
   const sessionId = c.req.param('sessionId')
 
-  return new Response(
-    new ReadableStream({
-      start(controller) {
-        const encoder = new TextEncoder()
-        const send = (event: StreamEvent) => {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
-        }
-        const unsub = registerSession(sessionId, send)
-        c.req.raw.signal.addEventListener('abort', unsub)
-      },
-    }),
-    {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
-    },
-  )
+  return streamSSE(c, async (stream) => {
+    const unsub = registerSession(sessionId, (event) => {
+      stream.writeSSE({
+        data: JSON.stringify(event),
+      })
+    })
+    await new Promise<void>((resolve) => {
+      c.req.raw.signal.addEventListener('abort', () => { unsub(); resolve() })
+    })
+  })
 })
 
 testRoutes.get('/sessions', (c) => {

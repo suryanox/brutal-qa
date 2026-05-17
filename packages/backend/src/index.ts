@@ -2,6 +2,15 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { testRoutes } from './routes/test.js'
+import { checkBrowserBinary } from './services/BrowserService.js'
+
+try {
+  checkBrowserBinary()
+  console.log('agent-browser found')
+} catch (err) {
+  console.error(String(err))
+  process.exit(1)
+}
 
 const app = new Hono()
 
