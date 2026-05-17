@@ -27,11 +27,11 @@ export function SettingsCard({ mode = 'modal', onClose }: SettingsCardProps) {
 
   return (
     <div
-      className={`${isInitial ? 'flex min-h-screen items-center justify-center bg-neutral-950' : ''}`}
+      className={`${isInitial ? 'flex min-h-screen items-center justify-center bg-neutral-950' : 'fixed inset-0 z-50 flex items-center justify-center bg-black/70'}`}
     >
       <div
         className={`w-full ${isInitial ? 'max-w-md' : 'max-w-sm'} rounded-xl border ${
-          isInitial ? 'border-neutral-700 bg-neutral-900 p-6 shadow-lg' : 'border-neutral-800 bg-neutral-900 p-5'
+          isInitial ? 'border-neutral-700 bg-neutral-900 p-6 shadow-lg' : 'border-neutral-700 bg-neutral-900 p-5 shadow-2xl'
         }`}
       >
         <h2 className="mb-1 text-lg font-semibold text-neutral-100">

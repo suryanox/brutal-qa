@@ -17,16 +17,19 @@ function App() {
   const viewSessionId = useTestStore((s) => s.viewSessionId)
   const hasSettings = !!settings.apiKey
 
-  if (!hasSettings || showSettings) {
+  if (!hasSettings) {
     return (
       <div className="min-h-screen bg-neutral-950">
-        <SettingsCard mode={showSettings && hasSettings ? 'modal' : 'initial'} />
+        <SettingsCard mode="initial" />
       </div>
     )
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100">
+      {showSettings && (
+        <SettingsCard mode="modal" onClose={() => setShowSettings(false)} />
+      )}
       <header className="border-b border-neutral-800 px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <h1 className="text-xl font-bold">BrutalQA</h1>

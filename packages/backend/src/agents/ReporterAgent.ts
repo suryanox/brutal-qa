@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { llmObject } from '../services/LLMService.js'
+import { createReporterAgent } from '../mastra/agents.js'
 import { emit } from '../services/StreamService.js'
 import type { AgentResult, FinalReport } from '../types/index.js'
 
@@ -23,20 +23,20 @@ export async function generateReport(
     .map((r) => `${r.agent}: ${r.passed} passed, ${r.failed} failed, ${r.bugs.length} bugs\n${r.bugs.map((b) => `  - [${b.severity}] ${b.description}`).join('\n')}`)
     .join('\n\n')
 
-  const report = await llmObject(
-    'You are a QA report writer. Summarize test results in a clear markdown report.',
-    [
-      {
-        role: 'user',
-        content: `Write a test report for ${url}.\n\nResults:\n${data}`,
-      },
-    ],
-    ReportSchema,
-  )
+  const agent = createReporterAgent()
+
+  const result = await agent.generate([
+    {
+      role: 'user',
+      content: `Write a test report for ${url}.\n\nResults:\n${data}`,
+    },
+  ], { maxSteps: 1 })
+
+  const report = ReportSchema.parse(JSON.parse(result.text))
 
   const final: FinalReport = {
     url,
-    summary: `${totalPassed} passed, ${totalFailed} failed, ${bugs.length} bugs found`,
+    summary: report.summary || `${totalPassed} passed, ${totalFailed} failed, ${bugs.length} bugs found`,
     totalPassed,
     totalFailed,
     bugs,

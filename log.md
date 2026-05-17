@@ -42,3 +42,20 @@
 - Error handling — loading spinner in header, empty state when no test is running
 - Backend sessions now store URL, timestamp, and result summary
 - ReporterAgent includes timestamp in FinalReport
+
+## Phase 5 — Mastra Integration (Agents + Tools)
+- Replaced raw Vercel AI SDK calls (generateText/generateObject) with Mastra Agents
+- `src/mastra/tools.ts` — 9 browser tools created via `createTool` from `@mastra/core/tools`
+  - snapshot, click, fill, type, wait, navigate, getText, getUrl, screenshot
+  - Factory pattern creates tools per session, closing over BrowserService
+  - Each tool has typed input/output Zod schemas
+  - Emits SSE events for real-time UI streaming
+- `src/mastra/agents.ts` — Agent factory functions using `Agent` from `@mastra/core/agent`
+  - AnalyzerAgent — generates structured test plans as JSON
+  - TesterAgent — executes test cases with browser tools (maxSteps: 15)
+  - ReporterAgent — generates markdown reports as JSON
+  - Dynamic model routing via `provider/model` string (reads LLM_PROVIDER + LLM_MODEL env vars)
+  - Maps custom base URLs to provider-specific env vars (OPENAI_BASE_URL, ANTHROPIC_BASE_URL)
+- Updated AnalyzerAgent, TesterAgent, ReporterAgent to use Mastra agents
+- Removed `src/services/LLMService.ts` (replaced by Mastra's model router)
+- Kept existing Hono server, SSE streaming, OrchestratorAgent pipeline, and routes intact
