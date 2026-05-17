@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { StreamEvent, FinalReport } from '@/types'
+import type { StreamEvent, FinalReport, SessionInfo } from '@/types'
 
 export interface Settings {
   provider: string
@@ -18,6 +18,8 @@ interface TestStore {
   report: FinalReport | null
   settings: Settings
   showSettings: boolean
+  sessions: SessionInfo[]
+  viewSessionId: string | null
 
   setSessionId: (id: string | null) => void
   setLoading: (v: boolean) => void
@@ -27,6 +29,8 @@ interface TestStore {
   setReport: (report: FinalReport) => void
   updateSettings: (s: Settings) => void
   setShowSettings: (v: boolean) => void
+  setSessions: (s: SessionInfo[]) => void
+  setViewSessionId: (id: string | null) => void
   reset: () => void
 }
 
@@ -48,6 +52,8 @@ export const useTestStore = create<TestStore>()(
       report: null,
       settings: defaultSettings,
       showSettings: false,
+      sessions: [],
+      viewSessionId: null,
 
       setSessionId: (id) => set({ sessionId: id }),
       setLoading: (v) => set({ loading: v }),
@@ -63,6 +69,8 @@ export const useTestStore = create<TestStore>()(
       setReport: (report) => set({ report }),
       updateSettings: (settings) => set({ settings, showSettings: false }),
       setShowSettings: (v) => set({ showSettings: v }),
+      setSessions: (sessions) => set({ sessions }),
+      setViewSessionId: (id) => set({ viewSessionId: id }),
       reset: () =>
         set({
           sessionId: null,

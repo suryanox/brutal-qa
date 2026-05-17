@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
 import { v4 as uuid } from 'uuid'
+import { readFileSync } from 'node:fs'
 import { runTestSuite } from '../agents/OrchestratorAgent.js'
 import { registerSession, emit } from '../services/StreamService.js'
-import type { StreamEvent } from '../types/index.js'
+import type { StreamEvent, SessionInfo, FinalReport } from '../types/index.js'
 
 export const testRoutes = new Hono()
 
@@ -13,7 +14,8 @@ interface Settings {
   model?: string
 }
 
-const sessions = new Map<string, { status: string; report?: unknown }>()
+const sessions = new Map<string, SessionInfo>()
+const reports = new Map<string, FinalReport>()
 
 testRoutes.post('/', async (c) => {
   const { url, settings } = await c.req.json<{ url: string; settings?: Settings }>()
@@ -30,14 +32,20 @@ testRoutes.post('/', async (c) => {
   }
 
   const sessionId = uuid()
-  sessions.set(sessionId, { status: 'running' })
+  const info: SessionInfo = { id: sessionId, url, status: 'running', timestamp: Date.now() }
+  sessions.set(sessionId, info)
 
   runTestSuite(sessionId, url)
     .then((report) => {
-      sessions.set(sessionId, { status: 'done', report })
+      reports.set(sessionId, report)
+      info.status = 'done'
+      info.summary = report.summary
+      info.totalPassed = report.totalPassed
+      info.totalFailed = report.totalFailed
+      info.bugCount = report.bugs.length
     })
     .catch((err) => {
-      sessions.set(sessionId, { status: 'error' })
+      info.status = 'error'
       emit(sessionId, { type: 'error', message: err.message })
     })
 
@@ -69,16 +77,28 @@ testRoutes.get('/stream/:sessionId', async (c) => {
 })
 
 testRoutes.get('/sessions', (c) => {
-  const list = Array.from(sessions.entries()).map(([id, s]) => ({
-    id,
-    status: s.status,
-  }))
+  const list = Array.from(sessions.values()).sort((a, b) => b.timestamp - a.timestamp)
   return c.json(list)
 })
 
 testRoutes.get('/sessions/:sessionId/report', (c) => {
   const sessionId = c.req.param('sessionId')
-  const session = sessions.get(sessionId)
-  if (!session) return c.json({ error: 'not found' }, 404)
-  return c.json(session.report ?? { status: session.status })
+  const report = reports.get(sessionId)
+  if (!report) {
+    const info = sessions.get(sessionId)
+    return c.json({ status: info?.status ?? 'not found' })
+  }
+  return c.json(report)
+})
+
+testRoutes.get('/screenshots/:filename', (c) => {
+  const filename = c.req.param('filename')
+  const filePath = `data/screenshots/${filename}`
+  try {
+    const buf = readFileSync(filePath)
+    const ext = filename.endsWith('.png') ? 'image/png' : 'image/jpeg'
+    return new Response(buf, { headers: { 'Content-Type': ext } })
+  } catch {
+    return c.json({ error: 'not found' }, 404)
+  }
 })

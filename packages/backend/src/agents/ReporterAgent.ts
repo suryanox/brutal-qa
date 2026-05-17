@@ -42,6 +42,7 @@ export async function generateReport(
     bugs,
     agentResults: results,
     markdown: report.markdown,
+    timestamp: Date.now(),
   }
 
   emit(sessionId, { type: 'agent:done', agent: 'reporter' })

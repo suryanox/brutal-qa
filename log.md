@@ -30,3 +30,15 @@
 - Vite proxy configured for /api -> backend on :3001
 - Replaced React useState prop-drilling with Zustand store (useTestStore)
 - Refactored all components to read/write from centralized store
+- SettingsCard for LLM config (provider, baseUrl, apiKey, model) with Zustand persist to localStorage
+- Settings shown on first launch, editable via top-right button
+
+## Phase 4 — Polish
+- Session history sidebar — lists past runs with URL, timestamp, pass/fail counts
+- Click history item to view past report (fetches from backend)
+- Bug screenshots — TesterAgent captures screenshot on failure, served via /api/test/screenshots/:filename
+- Screenshots displayed inline in the bugs tab
+- Retry wrapper on browser commands (2 retries before failing)
+- Error handling — loading spinner in header, empty state when no test is running
+- Backend sessions now store URL, timestamp, and result summary
+- ReporterAgent includes timestamp in FinalReport

@@ -54,6 +54,18 @@ export interface FinalReport {
   bugs: Bug[]
   agentResults: AgentResult[]
   markdown: string
+  timestamp: number
+}
+
+export interface SessionInfo {
+  id: string
+  url: string
+  status: string
+  timestamp: number
+  summary?: string
+  totalPassed?: number
+  totalFailed?: number
+  bugCount?: number
 }
 
 export type StreamEvent =

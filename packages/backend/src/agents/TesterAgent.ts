@@ -9,6 +9,17 @@ const SYSTEM = `You are a QA test executor. You have browser tools available.
 For each test case, execute the steps using the tools. If something goes wrong or an assertion fails, report it as a bug.
 Be thorough — verify elements are visible, text matches, navigation works.`
 
+async function withRetry<T>(fn: () => T, retries = 2): Promise<T> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await Promise.resolve(fn())
+    } catch (err) {
+      if (i === retries) throw err
+    }
+  }
+  throw new Error('unreachable')
+}
+
 export async function executeTestCases(
   sessionId: string,
   agentName: string,
@@ -24,16 +35,16 @@ export async function executeTestCases(
 
   const browserTools = {
     snapshot: {
-      description: 'Get the current page accessibility snapshot (use to check page state, find elements)',
+      description: 'Get the current page accessibility snapshot',
       parameters: zodSchema(z.object({})),
-      execute: async () => browser.snapshot(),
+      execute: async () => withRetry(() => browser.snapshot()),
     },
     click: {
       description: 'Click an element by its accessibility ref or CSS selector',
       parameters: zodSchema(z.object({ selector: z.string().describe('e.g. @e3 or #submit') })),
       execute: async ({ selector }: { selector: string }) => {
         emit(sessionId, { type: 'agent:action', agent: agentName, action: 'click', selector })
-        browser.click(selector)
+        withRetry(() => browser.click(selector))
         return `clicked ${selector}`
       },
     },
@@ -42,7 +53,7 @@ export async function executeTestCases(
       parameters: zodSchema(z.object({ selector: z.string(), value: z.string() })),
       execute: async ({ selector, value }: { selector: string; value: string }) => {
         emit(sessionId, { type: 'agent:action', agent: agentName, action: 'fill', selector })
-        browser.fill(selector, value)
+        withRetry(() => browser.fill(selector, value))
         return `filled ${selector} with "${value}"`
       },
     },
@@ -51,7 +62,7 @@ export async function executeTestCases(
       parameters: zodSchema(z.object({ selector: z.string(), value: z.string() })),
       execute: async ({ selector, value }: { selector: string; value: string }) => {
         emit(sessionId, { type: 'agent:action', agent: agentName, action: 'type', selector })
-        browser.type(selector, value)
+        withRetry(() => browser.type(selector, value))
         return `typed "${value}" into ${selector}`
       },
     },
@@ -59,7 +70,7 @@ export async function executeTestCases(
       description: 'Wait for an element to appear',
       parameters: zodSchema(z.object({ selector: z.string() })),
       execute: async ({ selector }: { selector: string }) => {
-        browser.wait(selector)
+        withRetry(() => browser.wait(selector))
         return `waited for ${selector}`
       },
     },
@@ -68,19 +79,28 @@ export async function executeTestCases(
       parameters: zodSchema(z.object({ url: z.string() })),
       execute: async ({ url }: { url: string }) => {
         emit(sessionId, { type: 'agent:action', agent: agentName, action: 'open', selector: url })
-        browser.open(url)
+        withRetry(() => browser.open(url))
         return `navigated to ${url}`
       },
     },
     getText: {
       description: 'Get text content of an element',
       parameters: zodSchema(z.object({ selector: z.string() })),
-      execute: async ({ selector }: { selector: string }) => browser.getText(selector),
+      execute: async ({ selector }: { selector: string }) => withRetry(() => browser.getText(selector)),
     },
     getUrl: {
       description: 'Get current page URL',
       parameters: zodSchema(z.object({})),
-      execute: async () => browser.url,
+      execute: async () => withRetry(() => browser.url),
+    },
+    screenshot: {
+      description: 'Take a screenshot of the current page',
+      parameters: zodSchema(z.object({})),
+      execute: async () => {
+        const path = `data/screenshots/${sessionId}-${agentName}-${Date.now()}.png`
+        browser.screenshot(path)
+        return path
+      },
     },
   }
 
@@ -102,8 +122,9 @@ export async function executeTestCases(
       const hasBug = result.toLowerCase().includes('bug') || result.toLowerCase().includes('fail')
       if (hasBug) {
         failed++
-        bugs.push({ severity: 'major', description: result.slice(0, 300), testCase: tc.id })
-        emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description: result.slice(0, 300) })
+        const screenshot = await withRetry(() => browser.screenshot()).catch(() => '')
+        bugs.push({ severity: 'major', description: result.slice(0, 300), testCase: tc.id, screenshot })
+        emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description: result.slice(0, 300), screenshot })
       } else {
         passed++
         emit(sessionId, { type: 'agent:log', agent: agentName, message: `${tc.id} PASSED` })
@@ -111,8 +132,9 @@ export async function executeTestCases(
     } catch (err) {
       failed++
       const description = err instanceof Error ? err.message : String(err)
-      bugs.push({ severity: 'major', description, testCase: tc.id })
-      emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description })
+      const screenshot = await withRetry(() => browser.screenshot()).catch(() => '')
+      bugs.push({ severity: 'major', description, testCase: tc.id, screenshot })
+      emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description, screenshot })
     }
   }
 
