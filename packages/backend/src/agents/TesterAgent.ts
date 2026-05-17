@@ -4,7 +4,8 @@ import { emit } from '../services/StreamService.js'
 import type { Bug, TestCase } from '../types/index.js'
 
 export async function executeTestCases(
-  sessionId: string,
+  streamSession: string,
+  browserSession: string,
   agentName: string,
   scope: string,
   testCases: TestCase[],
@@ -13,13 +14,13 @@ export async function executeTestCases(
   let passed = 0
   let failed = 0
 
-  emit(sessionId, { type: 'agent:start', agent: agentName, message: `Starting: ${scope}` })
+  emit(streamSession, { type: 'agent:start', agent: agentName, message: `Starting: ${scope}` })
 
-  const tools = createBrowserTools(sessionId, agentName, (ev) => emit(sessionId, ev))
+  const tools = createBrowserTools(browserSession, agentName, (ev) => emit(streamSession, ev))
   const agent = createTesterAgent(tools)
 
   for (const tc of testCases) {
-    emit(sessionId, { type: 'agent:log', agent: agentName, message: `Running ${tc.id}: ${tc.description}` })
+    emit(streamSession, { type: 'agent:log', agent: agentName, message: `Running ${tc.id}: ${tc.description}` })
 
     try {
       const stepsDesc = tc.steps.map((s, i) =>
@@ -40,20 +41,20 @@ export async function executeTestCases(
         failed++
         const screenshot = await tools.screenshot.execute!({}).catch(() => ({ path: '' }))
         bugs.push({ severity: 'major', description: result.text.slice(0, 300), testCase: tc.id, screenshot: screenshot.path })
-        emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description: result.text.slice(0, 300), screenshot: screenshot.path })
+        emit(streamSession, { type: 'bug:found', agent: agentName, severity: 'major', description: result.text.slice(0, 300), screenshot: screenshot.path })
       } else {
         passed++
-        emit(sessionId, { type: 'agent:log', agent: agentName, message: `${tc.id} PASSED` })
+        emit(streamSession, { type: 'agent:log', agent: agentName, message: `${tc.id} PASSED` })
       }
     } catch (err) {
       failed++
       const description = err instanceof Error ? err.message : String(err)
       const screenshot = await tools.screenshot.execute!({}).catch(() => ({ path: '' }))
       bugs.push({ severity: 'major', description, testCase: tc.id, screenshot: screenshot.path })
-      emit(sessionId, { type: 'bug:found', agent: agentName, severity: 'major', description, screenshot: screenshot.path })
+      emit(streamSession, { type: 'bug:found', agent: agentName, severity: 'major', description, screenshot: screenshot.path })
     }
   }
 
-  emit(sessionId, { type: 'agent:done', agent: agentName })
+  emit(streamSession, { type: 'agent:done', agent: agentName })
   return { passed, failed, bugs }
 }

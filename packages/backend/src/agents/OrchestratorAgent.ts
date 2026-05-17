@@ -20,9 +20,10 @@ export async function runTestSuite(
 
   const results: AgentResult[] = await Promise.all(
     agents.map(async (assignment) => {
-      const agentSessionId = `${sessionId}-${assignment.name}`
+      const browserSession = `${sessionId}-${assignment.name}`
       const { passed, failed, bugs } = await executeTestCases(
-        agentSessionId,
+        sessionId,
+        browserSession,
         assignment.name,
         assignment.scope,
         assignment.testCases as TestCase[],

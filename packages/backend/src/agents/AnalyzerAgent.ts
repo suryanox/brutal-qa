@@ -44,6 +44,14 @@ export async function analyzeSite(
 
   const plan = TestPlanSchema.parse(JSON.parse(result.text))
 
+  for (const a of plan.agents) {
+    for (const tc of a.testCases) {
+      for (const step of tc.steps) {
+        if (step.action === 'open') step.url = url
+      }
+    }
+  }
+
   emit(sessionId, { type: 'agent:log', agent: 'analyzer', message: `Plan: ${plan.overview}` })
   emit(sessionId, {
     type: 'agent:log',
