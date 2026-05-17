@@ -28,3 +28,5 @@
 - Frontend: ReportViewer — tabs for rendered markdown report and bug list
 - Frontend: App.tsx — full layout with responsive 4-column grid
 - Vite proxy configured for /api -> backend on :3001
+- Replaced React useState prop-drilling with Zustand store (useTestStore)
+- Refactored all components to read/write from centralized store

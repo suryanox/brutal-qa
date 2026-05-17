@@ -1,25 +1,21 @@
 import { useMemo, useState } from 'react'
 import { marked } from 'marked'
-import type { StreamEvent, FinalReport } from '@/types'
+import { useTestStore } from '@/store'
 
-interface ReportViewerProps {
-  events: StreamEvent[]
-}
-
-export function ReportViewer({ events }: ReportViewerProps) {
+export function ReportViewer() {
   const [activeTab, setActiveTab] = useState<'report' | 'bugs'>('report')
-
-  const reportEvent = events.findLast((e) => e.type === 'report:final')
-  const report: FinalReport | null = reportEvent?.type === 'report:final' ? reportEvent.report : null
+  const events = useTestStore((s) => s.events)
+  const report = useTestStore((s) => s.report)
 
   const reportHtml = useMemo(() => {
     if (!report) return ''
     return marked.parse(report.markdown, { async: false }) as string
   }, [report])
 
-  const bugs = useMemo(() => {
-    return events.filter((e): e is StreamEvent & { type: 'bug:found' } => e.type === 'bug:found')
-  }, [events])
+  const bugs = useMemo(
+    () => events.filter((e): e is typeof e & { type: 'bug:found' } => e.type === 'bug:found'),
+    [events],
+  )
 
   if (!report && bugs.length === 0) return null
 

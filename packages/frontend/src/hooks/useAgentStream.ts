@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
-import type { StreamEvent } from '@/types'
+import { useEffect, useRef } from 'react'
+import { useTestStore } from '@/store'
 
-export function useAgentStream(sessionId: string | null) {
-  const [events, setEvents] = useState<StreamEvent[]>([])
-  const [connected, setConnected] = useState(false)
+export function useAgentStream() {
+  const sessionId = useTestStore((s) => s.sessionId)
+  const setConnected = useTestStore((s) => s.setConnected)
+  const addEvent = useTestStore((s) => s.addEvent)
   const evtSource = useRef<EventSource | null>(null)
 
   useEffect(() => {
@@ -14,8 +15,8 @@ export function useAgentStream(sessionId: string | null) {
     setConnected(true)
 
     es.onmessage = (msg) => {
-      const event: StreamEvent = JSON.parse(msg.data)
-      setEvents((prev) => [...prev, event])
+      const event = JSON.parse(msg.data)
+      addEvent(event)
     }
 
     es.onerror = () => {
@@ -27,7 +28,5 @@ export function useAgentStream(sessionId: string | null) {
       es.close()
       setConnected(false)
     }
-  }, [sessionId])
-
-  return { events, connected }
+  }, [sessionId, setConnected, addEvent])
 }

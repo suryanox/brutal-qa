@@ -1,31 +1,13 @@
-import { useState } from 'react'
 import { UrlInput } from '@/components/UrlInput'
 import { Console } from '@/components/Console'
 import { AgentDashboard } from '@/components/AgentDashboard'
 import { ReportViewer } from '@/components/ReportViewer'
 import { useAgentStream } from '@/hooks/useAgentStream'
+import { useTestStore } from '@/store'
 
 function App() {
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const { events } = useAgentStream(sessionId)
-
-  async function handleStart(url: string) {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      })
-      const data = await res.json()
-      setSessionId(data.sessionId)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  useAgentStream()
+  const sessionId = useTestStore((s) => s.sessionId)
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100">
@@ -37,18 +19,18 @@ function App() {
       </header>
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 p-6">
-        <UrlInput onStart={handleStart} loading={loading} />
+        <UrlInput />
 
         {sessionId && (
           <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-4">
             <div className="lg:col-span-1">
-              <AgentDashboard events={events} />
+              <AgentDashboard />
             </div>
             <div className="flex flex-col gap-4 lg:col-span-3">
               <div className="flex-1">
-                <Console events={events} />
+                <Console />
               </div>
-              <ReportViewer events={events} />
+              <ReportViewer />
             </div>
           </div>
         )}

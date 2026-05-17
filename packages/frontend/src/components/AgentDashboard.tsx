@@ -1,30 +1,22 @@
-import type { StreamEvent, AgentStatus } from '@/types'
+import type { AgentStatus } from '@/types'
+import { useTestStore } from '@/store'
 
-type EventWithAgent = Extract<StreamEvent, { agent: string }>
-
-function hasAgent(e: StreamEvent): e is EventWithAgent {
-  return 'agent' in e
-}
-
-interface AgentDashboardProps {
-  events: StreamEvent[]
-}
-
-export function AgentDashboard({ events }: AgentDashboardProps) {
+export function AgentDashboard() {
+  const events = useTestStore((s) => s.events)
   const agents = new Map<string, { status: AgentStatus; bugCount: number }>()
 
   agents.set('orchestrator', { status: 'idle', bugCount: 0 })
   agents.set('analyzer', { status: 'idle', bugCount: 0 })
 
   for (const ev of events) {
-    if (!hasAgent(ev)) continue
-
-    if (!agents.has(ev.agent)) {
-      agents.set(ev.agent, { status: 'running', bugCount: 0 })
+    if ('agent' in ev) {
+      if (!agents.has(ev.agent)) {
+        agents.set(ev.agent, { status: 'running', bugCount: 0 })
+      }
+      const agent = agents.get(ev.agent)!
+      if (ev.type === 'agent:done') agent.status = 'done'
+      if (ev.type === 'bug:found') agent.bugCount++
     }
-    const agent = agents.get(ev.agent)!
-    if (ev.type === 'agent:done') agent.status = 'done'
-    if (ev.type === 'bug:found') agent.bugCount++
   }
 
   return (

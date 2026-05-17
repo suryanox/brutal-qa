@@ -1,11 +1,8 @@
 import { useEffect, useRef } from 'react'
-import type { StreamEvent } from '@/types'
+import { useTestStore } from '@/store'
 
-interface ConsoleProps {
-  events: StreamEvent[]
-}
-
-export function Console({ events }: ConsoleProps) {
+export function Console() {
+  const events = useTestStore((s) => s.events)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,7 +27,7 @@ export function Console({ events }: ConsoleProps) {
   )
 }
 
-function LogLine({ event }: { event: StreamEvent }) {
+function LogLine({ event }: { event: ReturnType<typeof useTestStore.getState>['events'][number] }) {
   switch (event.type) {
     case 'agent:start':
       return (
@@ -84,7 +81,5 @@ function LogLine({ event }: { event: StreamEvent }) {
           <span className="text-green-400">{event.report.summary}</span>
         </span>
       )
-    default:
-      return <span className="text-neutral-500">{JSON.stringify(event)}</span>
   }
 }
