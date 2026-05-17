@@ -6,13 +6,18 @@ import type { z } from 'zod'
 function getModel() {
   const provider = process.env.LLM_PROVIDER ?? 'openai'
   const model = process.env.LLM_MODEL ?? 'gpt-4o'
+  const baseUrl = process.env.LLM_BASE_URL
 
   switch (provider) {
     case 'anthropic':
       return createAnthropic()(model)
     case 'openai':
-    default:
-      return createOpenAI()(model)
+    default: {
+      const openai = baseUrl
+        ? createOpenAI({ baseURL: baseUrl })
+        : createOpenAI()
+      return openai(model)
+    }
   }
 }
 

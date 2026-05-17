@@ -3,6 +3,7 @@ import { useTestStore } from '@/store'
 export function UrlInput() {
   const url = useTestStore((s) => s.url)
   const loading = useTestStore((s) => s.loading)
+  const settings = useTestStore((s) => s.settings)
   const setUrl = useTestStore((s) => s.setUrl)
   const setSessionId = useTestStore((s) => s.setSessionId)
   const setLoading = useTestStore((s) => s.setLoading)
@@ -16,7 +17,7 @@ export function UrlInput() {
       const res = await fetch('/api/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, settings }),
       })
       const data = await res.json()
       setSessionId(data.sessionId)
